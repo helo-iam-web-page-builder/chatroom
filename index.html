@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Persistent Chatroom</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-image: linear-gradient(rgb(223, 219, 219),rgb(126, 126, 126)); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        #chat-container { width: 100%; max-width: 600px; background-image: linear-gradient(rgb(156, 156, 156), rgb(77, 76, 76)); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
+        #messages { 
+            flex: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            list-style-type: none; margin: 0; }
+        #messages li { 
+            padding: 8px 12px; 
+            margin-bottom: 8px; 
+            background-image: linear-gradient(rgb(172, 232, 172), rgb(35, 119, 35)); 
+            border-radius: 4px; 
+            word-break: break-word; }
+        #messages li span { 
+            font-weight: bold; 
+            color: #eef0f3; }
+        
+    
+      
+        button { 
+            padding: 8px 16px; 
+            background-image: linear-gradient(rgb(161, 161, 247),rgb(42, 42, 188)); 
+            color: white; border: none; 
+            border-radius: 4px; 
+            cursor: pointer; }
+    
+        #username{
+            border: solid 1px transparent;
+            background-image: linear-gradient(rgb(158, 158, 39), yellow);
+        }
+
+        #input{
+            border: solid 1px transparent;
+            background-image: linear-gradient(rgb(158, 158, 39), yellow);
+        }
+
+        #form { 
+            display: flex; 
+            padding: 10px; 
+            background-image: linear-gradient(rgb(130, 129, 129), rgb(22, 22, 22));
+            border-top: 1px solid #dee2e6; 
+            gap: 10px; 
+        }
+    </style>
+</head>
+<body>
+
+    <img src="logo.png" alt="" height="100px" width="auto">
+    <div id="chat-container">
+        <ul id="messages"></ul>
+        <form id="form">
+            <input id="username" autocomplete="off" placeholder="Name" required />
+            <input id="input" autocomplete="off" placeholder="Type a message..." required />
+            <button>Send</button>
+        </form>
+    </div>
+
+    <!-- Socket.io Client Script -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+        const usernameInput = document.getElementById('username');
+        const messages = document.getElementById('messages');
+
+        // Append a message to the chat window list
+        function appendMessage(username, message) {
+            const item = document.createElement('li');
+            item.innerHTML = `<span>${username}:</span> ${message}`;
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight; // Auto-scroll to bottom
+        }
+
+        // Send message to server on submit
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (input.value && usernameInput.value) {
+                socket.emit('chat_message', {
+                    username: usernameInput.value,
+                    message: input.value
+                });
+                input.value = '';
+            }
+        });
+
+        // Load historical messages when first connecting
+        socket.on('load_history', function(history) {
+            history.forEach(row => {
+                appendMessage(row.username, row.message);
+            });
+        });
+
+        // Receive real-time messages broadcasted by the server
+        socket.on('chat_message', function(data) {
+            appendMessage(data.username, data.message);
+        });
+    </script>
+</body>
+</html>
